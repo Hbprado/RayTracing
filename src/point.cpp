@@ -37,3 +37,21 @@ bool Point::operator!=(const Point &other) const
 {
     return !(*this == other);
 }
+
+Vector Point::operator-(const Point &other) const
+{
+    return Vector(x - other.x, y - other.y, z - other.z);
+}
+
+Point &Point::operator+=(const Vector &other)
+{
+    x += other.x;
+    y += other.y;
+    z += other.z;
+    return *this;
+}
+
+Point Point::operator+(const Vector &other) const
+{
+    return Point(x + other.x, y + other.y, z + other.z);
+}
