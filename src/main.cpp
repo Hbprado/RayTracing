@@ -56,11 +56,24 @@ void render(const Camera &camera, const Sphere &sphere1, const Sphere &sphere2, 
             bool hitPlane = plane.intersect(ray.getOrigin(), ray.getDirection(), tPlane);
 
             // Determinar a cor do pixel com base nas interseções
-            if ((hitSphere1 && (!hitSphere2 || tSphere1 < tSphere2) && (!hitPlane || tSphere1 < tPlane)) ||
-                (hitSphere2 && (!hitSphere1 || tSphere2 < tSphere1) && (!hitPlane || tSphere2 < tPlane)))
+            if (hitSphere1 || hitSphere2 || hitPlane)
             {
-                // Escolher a cor da primeira ou segunda esfera com base na interseção mais próxima
-                image[y][x] = hitSphere1 ? sphere1.getColor() : sphere2.getColor();
+                // Verificar qual interseção é a mais próxima
+                if (hitSphere1 && (!hitSphere2 || tSphere1 < tSphere2) && (!hitPlane || tSphere1 < tPlane))
+                {
+                    // Interseção com a primeira esfera
+                    image[y][x] = sphere1.getColor();
+                }
+                else if (hitSphere2 && (!hitSphere1 || tSphere2 < tSphere1) && (!hitPlane || tSphere2 < tPlane))
+                {
+                    // Interseção com a segunda esfera
+                    image[y][x] = sphere2.getColor();
+                }
+                else
+                {
+                    // Interseção com o plano
+                    image[y][x] = plane.getColor();
+                }
             }
             else
             {
@@ -73,16 +86,17 @@ void render(const Camera &camera, const Sphere &sphere1, const Sphere &sphere2, 
     // Salvar a imagem em formato PPM
     saveImage("output.ppm", image, width, height);
 }
+
 int main()
 {
     // Configurar a câmera, esferas e plano
-    Camera myCamera(Point(0.0, 0.0, 5.0), Point(0.0, 0.0, 0.0), Vector(0.0, 1.0, 0.0), 2.0, 2, 2);
-    Sphere mySphere1(Point(1.0, 0.0, 0.0), 1.5, Vector(1.0, 0.0, 1.0));
-    Sphere mySphere2(Point(2.0, 0.0, 2.5), 1.0, Vector(0.0, 1.0, 0.0)); // Posicionada na frente da mySphere1
-    Plane myPlane(Point(0.0, 2.0, 0.0), Vector(0.0, 1.0, 0.0), Vector(1.0, 0.0, 0.0), Vector(0.0, 0.0, 1.0), Vector(1.0, 0.0, 0.0));
+    Camera myCamera(Point(0.0, 0.0, 5.0), Point(0.0, 0.0, 0.0), Vector(0.0, 1.0, 0.0), 1.0, 1, 1);
+    Sphere mySphere1(Point(2.0, 0.0, 0.0), 1.0, Vector(1.0, 0.0, 1.0));
+    Sphere mySphere2(Point(-1.0, 0.0, 0.0), 1.0, Vector(0.0, 1.0, 0.0));                                                              // Posicionada na frente da mySphere1
+    Plane myPlane(Point(0.0, -1.0, 0.0), Vector(0.0, 1.0, 0.0), Vector(1.0, 0.0, 0.0), Vector(0.0, 0.0, 1.0), Vector(1.0, 1.0, 1.0)); // Plano branco
 
     // Renderizar a cena
-    render(myCamera, mySphere1, mySphere2, myPlane, 800, 800);
+    render(myCamera, mySphere1, mySphere2, myPlane, 600, 600);
 
     return 0;
 }
