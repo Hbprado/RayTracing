@@ -14,6 +14,7 @@ public:
     Vector operator+(const Vector &other) const;
     Vector operator-(const Vector &other) const;
     Vector operator*(double scalar) const;
+    Vector operator+=(const Vector &other);
     // Demais operações entre vetores
     double dot(const Vector &other) const;
     Vector cross(const Vector &other) const;

@@ -21,6 +21,14 @@ Vector Vector::operator*(double scalar) const
     return Vector(x * scalar, y * scalar, z * scalar);
 }
 
+Vector Vector::operator+=(const Vector &other)
+{
+    x += other.x;
+    y += other.y;
+    z += other.z;
+    return *this;
+}
+
 double Vector::dot(const Vector &other) const
 {
     return x * other.x + y * other.y + z * other.z;
