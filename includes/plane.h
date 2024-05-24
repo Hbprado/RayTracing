@@ -3,15 +3,15 @@
 
 #include "point.h"
 #include "vector.h"
+#include "object.h"
 
-class Plane
+class Plane : public Object
 {
 public:
     Plane(const Point &point, const Vector &normal, const Vector &u, const Vector &v, const Vector &color);
 
-    bool intersect(const Point &rayOrigin, const Vector &rayDirection, double &t) const;
-
-    Vector getColor() const;
+    bool intersect(const Point &rayOrigin, const Vector &rayDirection, double &t) const override;
+    Vector getColor() const override;
 
 private:
     Point point;

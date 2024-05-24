@@ -3,16 +3,15 @@
 
 #include "point.h"
 #include "vector.h"
+#include "object.h"
 
-class Sphere
+class Sphere : public Object
 {
 public:
-    // Construtor
     Sphere(const Point &center, double radius, const Vector &color);
 
     // Método para testar a interseção com um raio
     bool intersect(const Point &origin, const Vector &direction, double &t) const;
-
     // Método para obter a cor da esfera
     Vector getColor() const;
 
