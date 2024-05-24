@@ -1,21 +1,20 @@
-#include "../includes/camera.h"
-#include "../includes/sphere.h"
-#include "../includes/plane.h"
-#include "../includes/vector.h"
-#include "../includes/point.h"
-#include "../includes/ray.h"
-
+#include "camera.h"
+#include "sphere.h"
+#include "plane.h"
+#include "mesh.h"
+#include "vector.h"
+#include "point.h"
+#include "ray.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <limits>
 
-// Função para salvar a imagem em formato PPM
 void saveImage(const std::string &filename, const std::vector<std::vector<Vector>> &image, int width, int height)
 {
     std::ofstream file(filename);
     file << "P3\n"
          << width << " " << height << "\n255\n";
-
     for (int y = 0; y < height; ++y)
     {
         for (int x = 0; x < width; ++x)
@@ -26,77 +25,71 @@ void saveImage(const std::string &filename, const std::vector<std::vector<Vector
         }
         file << "\n";
     }
-
     file.close();
 }
 
-// Função para renderizar a cena
-void render(const Camera &camera, const Sphere &sphere1, const Sphere &sphere2, const Plane &plane, int width, int height)
+void render(const Camera &camera, const std::vector<Object *> &objects, const Mesh &mesh, int width, int height)
 {
-    // Buffer de imagem para armazenar as cores dos pixels
     std::vector<std::vector<Vector>> image(height, std::vector<Vector>(width, Vector()));
-
-    // Loop pelos pixels da tela
     for (int y = 0; y < height; ++y)
     {
         for (int x = 0; x < width; ++x)
         {
-            // Calcular a direção do raio para este pixel
             double u = static_cast<double>(x) / width;
             double v = static_cast<double>(y) / height;
             Vector rayDirection = camera.getU() * (2 * u - 1) + camera.getV() * (1 - 2 * v) + camera.getW();
-
-            // Criar um raio da câmera
             Ray ray(camera.getPosition(), rayDirection.normalize());
+            double t_min = std::numeric_limits<double>::max();
+            Vector pixel_color(0.0, 0.0, 0.0);
 
-            // Verificar interseções com esferas e plano
-            double tSphere1, tSphere2, tPlane;
-            bool hitSphere1 = sphere1.intersect(ray.getOrigin(), ray.getDirection(), tSphere1);
-            bool hitSphere2 = sphere2.intersect(ray.getOrigin(), ray.getDirection(), tSphere2);
-            bool hitPlane = plane.intersect(ray.getOrigin(), ray.getDirection(), tPlane);
-
-            // Determinar a cor do pixel com base nas interseções
-            if (hitSphere1 || hitSphere2 || hitPlane)
+            for (const auto &object : objects)
             {
-                // Verificar qual interseção é a mais próxima
-                if (hitSphere1 && (!hitSphere2 || tSphere1 < tSphere2) && (!hitPlane || tSphere1 < tPlane))
+                double t;
+                if (object->intersect(ray.getOrigin(), ray.getDirection(), t) && t < t_min)
                 {
-                    // Interseção com a primeira esfera
-                    image[y][x] = sphere1.getColor();
-                }
-                else if (hitSphere2 && (!hitSphere1 || tSphere2 < tSphere1) && (!hitPlane || tSphere2 < tPlane))
-                {
-                    // Interseção com a segunda esfera
-                    image[y][x] = sphere2.getColor();
-                }
-                else
-                {
-                    // Interseção com o plano
-                    image[y][x] = plane.getColor();
+                    t_min = t;
+                    pixel_color = object->getColor();
                 }
             }
-            else
+
+            // Interseção com a malha de triângulos
+            float t = std::numeric_limits<float>::max();
+            Vector color(0.0, 0.0, 0.0);
+            if (mesh.intersect(Vector(ray.getOrigin().x, ray.getOrigin().y, ray.getOrigin().z), ray.getDirection(), t, color) && t < t_min)
             {
-                // Cor de fundo (por exemplo, preto)
-                image[y][x] = Vector(0.0, 0.0, 0.0);
+                t_min = t;
+                pixel_color = color;
             }
+
+            image[y][x] = pixel_color;
         }
     }
-
-    // Salvar a imagem em formato PPM
     saveImage("output.ppm", image, width, height);
 }
 
 int main()
 {
-    // Configurar a câmera, esferas e plano
-    Camera myCamera(Point(0.0, 0.0, 5.0), Point(0.0, 0.0, 0.0), Vector(0.0, 1.0, 0.0), 1.0, 1, 1);
+    // Ajustar a posição da câmera e aumentar o campo de visão
+    Camera myCamera(Point(0.0, 0.0, 5.0), Point(0.0, 0.0, 0.0), Vector(0.0, 1.0, 0.0), 2.0, 2, 2); // Aumentar o campo de visão
     Sphere mySphere1(Point(2.0, 0.0, 0.0), 1.0, Vector(1.0, 0.0, 1.0));
     Sphere mySphere2(Point(-1.0, 0.0, 0.0), 1.0, Vector(0.0, 1.0, 0.0));                                                              // Posicionada na frente da mySphere1
     Plane myPlane(Point(0.0, -1.0, 0.0), Vector(0.0, 1.0, 0.0), Vector(1.0, 0.0, 0.0), Vector(0.0, 0.0, 1.0), Vector(1.0, 1.0, 1.0)); // Plano branco
 
-    // Renderizar a cena
-    render(myCamera, mySphere1, mySphere2, myPlane, 600, 600);
+    std::vector<Object *> objects;
+    objects.push_back(&mySphere1);
+    objects.push_back(&mySphere2);
+    objects.push_back(&myPlane);
+
+    // Definir alguns triângulos para a malha e posicioná-los de forma que fiquem visíveis na câmera
+    std::vector<Triangle> triangles = {
+        Triangle(Vector(0, 2, 10), Vector(-2, -2, 10), Vector(2, -2, 10), Vector(1, 0, 0)), // vermelho
+        Triangle(Vector(3, 2, 12), Vector(1, -2, 12), Vector(5, -2, 12), Vector(0, 1, 0))   // verde
+    };
+
+    // Criar a malha
+    Mesh mesh(triangles);
+
+    render(myCamera, objects, mesh, 600, 600);
 
     return 0;
 }
